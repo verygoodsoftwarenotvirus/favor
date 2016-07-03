@@ -10,8 +10,9 @@ import (
 
 // Solid is our basic struct for making Favor API requests
 type Solid struct {
-	Token string
-	debug bool
+	Token  string
+	Client *http.Client
+	Secure bool
 }
 
 // New is a constructor function returning a new instance of Solid. Token is a mandatory argument.
@@ -20,7 +21,7 @@ func New(token string) (*Solid, error) {
 	if len(token) < 32 {
 		return nil, fmt.Errorf("The token provided is the incorrect length, a normal favorToken is 32 characters long.")
 	}
-	s := &Solid{Token: token}
+	s := &Solid{Token: token, Secure: true}
 	return s, nil
 }
 
@@ -32,7 +33,12 @@ func New(token string) (*Solid, error) {
 // solid.BuildURL("hello", map[string]string{"lol": "yup"})
 //     =>  "https://api.askfavor.com/api/v5/hello?lol=yup"
 func (s Solid) BuildURL(endpoint string, params map[string]string) string {
-	baseURL := "https://api.askfavor.com/api/v5/"
+	var baseURL string
+	if s.Secure {
+		baseURL = "https://api.askfavor.com/api/v5/"
+	} else {
+		baseURL = "http://api.askfavor.com/api/v5/"
+	}
 	v := url.Values{}
 	for p, val := range params {
 		v.Add(p, val)
@@ -57,7 +63,7 @@ func (s Solid) makeAPIRequest(method string, url string) ([]byte, error) {
 
 	req.Header.Add("favorToken", s.Token)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := s.Client.Do(req)
 	if err != nil {
 		err = fmt.Errorf("API request failed to complete and returned this error:\n %v", err)
 		return nil, err

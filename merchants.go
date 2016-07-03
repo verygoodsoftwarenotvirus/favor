@@ -40,36 +40,6 @@ type MerchantHours struct {
 	Close time.Time
 }
 
-// Merchant describes restauraunts or places of business that cooperate
-// with Favor, to my understanding. Favor will process any request you
-// make with them, regardless of partnership, but the app uses Merchants
-// to provide you more detailed information about what that merchant offers
-type Merchant struct {
-	ID              string          `json:"id"`
-	Name            string          `json:"name"`
-	HasExpandedMenu string          `json:"has_expanded_menu"`
-	Distance        float64         `json:"distance"`
-	Address         string          `json:"address"`
-	Zipcode         string          `json:"zipcode"`
-	Hours           []MerchantHours `json:"hours"`
-}
-
-// Merchants is a container struct set up so that we
-// can call sort.Sort() on any given slice of merchants.
-type Merchants []Merchant
-
-func (m Merchants) Len() int {
-	return len(m)
-}
-
-func (m Merchants) Less(i, j int) bool {
-	return m[i].Name < m[j].Name
-}
-
-func (m Merchants) Swap(i, j int) {
-	m[i], m[j] = m[j], m[i]
-}
-
 func (m MerchantHoursResponse) buildTimesFromHours() (map[int][]MerchantHours, error) {
 	hours := map[int][]MerchantHours{}
 	now := time.Now()
@@ -115,25 +85,66 @@ func (m MerchantHoursResponse) buildTimesFromHours() (map[int][]MerchantHours, e
 // is available for placing orders at a given time. Possible
 // usage would be something like m.IsOpenAt(time.Now())
 // func (m Merchant) IsOpenAt(t time.Time) bool {
-// 	// LEARNME: time.Time's days start on Sunday, but do Favor's as well?
-// 	day := t.Day()
-// 	for _, h := range m.Hours {
-// 		for _, sd := range h.Days {
-// 			if strings.HasPrefix(sd, "+") {
-// 				sd = strings.TrimPrefix(sd, "+")
-// 			}
-// 			d, err := strconv.Atoi(sd)
-// 			if err != nil {
-// 				// TODO: find a better way to resolve this possibility
-// 				log.Fatal("Days provided by Favor merchant are somehow non-numeric")
-// 			}
-// 			if d == day {
-
-// 			}
-// 		}
-// 	}
 // 	return false
 // }
+
+// Merchant describes restauraunts or places of business that cooperate
+// with Favor, to my understanding. Favor will process any request you
+// make with them, regardless of partnership, but the app uses Merchants
+// to provide you more detailed information about what that merchant offers
+type Merchant struct {
+	ID              string          `json:"id"`
+	FranchiseID     string          `json:"franchise_id,omitempty"`
+	MarketID        string          `json:"market_id,omitempty"`
+	Name            string          `json:"name"`
+	Phone           string          `json:"phone,omitempty"`
+	Address         string          `json:"address"`
+	City            string          `json:"city,omitempty"`
+	State           string          `json:"state,omitempty"`
+	Zipcode         string          `json:"zipcode"`
+	Distance        float64         `json:"distance,omitempty"`
+	HasExpandedMenu string          `json:"has_expanded_menu,omitempty"`
+	Hours           []MerchantHours `json:"hours,omitempty"`
+	Latitude        string          `json:"lat,omitempty"`
+	Longitude       string          `json:"lng,omitempty"`
+	IsCarOnly       string          `json:"is_car_only,omitempty"`
+}
+
+// Merchants is a container struct set up so that we
+// can call sort.Sort() on any given slice of merchants.
+type Merchants []Merchant
+
+func (m Merchants) Len() int {
+	return len(m)
+}
+
+func (m Merchants) Less(i, j int) bool {
+	return m[i].Name < m[j].Name
+}
+
+func (m Merchants) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
+}
+
+// GetMerchants is used to retrieve Merchants from the Favor API.
+func (s Solid) GetMerchant(id string) (Merchant, error) {
+	emptyMerchant := Merchant{}
+	urlParams := map[string]string{}
+	url := s.BuildURL(fmt.Sprintf("merchant/%v", id), urlParams)
+	merchantData, err := s.makeAPIRequest("get", url)
+	if err != nil {
+		return emptyMerchant, err
+	}
+	mr := struct {
+		Merchant Merchant `json:"merchant"`
+	}{}
+
+	err = json.Unmarshal(merchantData, &mr)
+	if err != nil {
+		return emptyMerchant, err
+	}
+	return mr.Merchant, nil
+}
 
 // GetMerchants is used to retrieve Merchants from the Favor API.
 func (s Solid) GetMerchants(lat, long float64) ([]Merchant, error) {

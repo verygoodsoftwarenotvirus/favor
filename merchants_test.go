@@ -1,26 +1,169 @@
 package solid
 
 import (
-	"os"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+
+	"net/url"
+
+	"reflect"
 	"testing"
 	"time"
 )
 
-func TestGetMerchants(t *testing.T) {
-	token := os.Getenv("FAVOR_TOKEN")
-	if true { // token == "" {
-		t.Skip("skipping test; $FAVOR_TOKEN not set")
-	}
-	s, err := New(token)
+func setupMockClient(response string) (*httptest.Server, *http.Client) {
+	/*
+		Originally I wanted to just have the API make requests to the HTTPS endpoints
+		that Favor sets up. Unfortunately, I couldn't get httptest.NewTLSServer working
+		so I had to make security a boolean value, which is sad, and makes me sad.
 
+		If somebody can/wants to issue a PR fixing this, you will have my eternal gratitude.
+
+		This code is lovingly borrowed from http://keighl.com/post/mocking-http-responses-in-golang/
+	*/
+
+	// Test server that always responds with 200 code, and specific payload
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, response)
+	}))
+
+	// Make a transport that reroutes all traffic to the example server
+	transport := &http.Transport{
+		Proxy: func(req *http.Request) (*url.URL, error) {
+			return url.Parse(server.URL)
+		},
+	}
+	// Make a http.Client with the transport
+	httpClient := &http.Client{Transport: transport}
+	return server, httpClient
+}
+
+func TestGetMerchant(t *testing.T) {
+	s, err := New(dummyToken)
 	if err != nil {
 		t.Errorf("Constructor failed with the following error: %v", err)
 		t.FailNow()
 	}
+	s.Secure = false
 
-	_, err = s.GetMerchants(30.234855, -97.7322537)
+	dummyMerchantResponse := `
+	{
+		"merchant": {
+			"id": "1234",
+			"franchise_id": "1",
+			"market_id": "1",
+			"name": "Farts McGregor's Corntopia",
+			"phone": "5124206969",
+			"address": "42 Wallaby Way",
+			"city": "Sydney",
+			"state": "NSW",
+			"zipcode": "2000",
+			"has_expanded_menu": "1",
+			"lat": "-33.865143",
+			"lng": "151.209900",
+			"is_car_only": "0"
+		}
+	}`
+
+	server, client := setupMockClient(dummyMerchantResponse)
+	defer server.Close()
+
+	s.Client = client
+
+	expectedMerchant := Merchant{
+		ID:              "1234",
+		FranchiseID:     "1",
+		MarketID:        "1",
+		Name:            "Farts McGregor's Corntopia",
+		Phone:           "5124206969",
+		Address:         "42 Wallaby Way",
+		City:            "Sydney",
+		State:           "NSW",
+		Zipcode:         "2000",
+		HasExpandedMenu: "1",
+		Latitude:        "-33.865143",
+		Longitude:       "151.209900",
+		IsCarOnly:       "0",
+	}
+
+	actualMerchant, err := s.GetMerchant("1234")
+	if err != nil {
+		t.Errorf("GetMerchant failed with the following error: %v", err)
+	}
+
+	if !reflect.DeepEqual(expectedMerchant, actualMerchant) {
+		t.Errorf("Retrieved Merchant differs from expected result.\n")
+		t.Errorf("Expected:\n%v+ \n", expectedMerchant)
+		t.Errorf("Received:\n%v+ \n", actualMerchant)
+	}
+}
+
+func TestGetMerchants(t *testing.T) {
+	s, err := New(dummyToken)
+	if err != nil {
+		t.Errorf("Constructor failed with the following error: %v", err)
+		t.FailNow()
+	}
+	s.Secure = false
+
+	dummyMerchantResponse := `
+	{
+		"merchants": [{
+			"id": "1234",
+			"franchise_id": "1",
+			"market_id": "1",
+			"name": "Farts McGregor's Corntopia",
+			"phone": "5124206969",
+			"address": "42 Wallaby Way",
+			"city": "Sydney",
+			"state": "NSW",
+			"zipcode": "2000",
+			"has_expanded_menu": "1",
+			"lat": "-33.865143",
+			"lng": "151.209900",
+			"is_car_only": "0"
+		}]
+	}`
+
+	server, client := setupMockClient(dummyMerchantResponse)
+	defer server.Close()
+
+	s.Client = client
+
+	expectedMerchants := []Merchant{
+		Merchant{
+			ID:              "1234",
+			FranchiseID:     "1",
+			MarketID:        "1",
+			Name:            "Farts McGregor's Corntopia",
+			Phone:           "5124206969",
+			Address:         "42 Wallaby Way",
+			City:            "Sydney",
+			State:           "NSW",
+			Zipcode:         "2000",
+			HasExpandedMenu: "1",
+			Latitude:        "-33.865143",
+			Longitude:       "151.209900",
+			IsCarOnly:       "0",
+		},
+	}
+
+	actualMerchants, err := s.GetMerchants(30.234855, -97.7322537)
 	if err != nil {
 		t.Errorf("GetMerchants failed with the following error: %v", err)
+	}
+
+	if len(actualMerchants) != 1 {
+		t.Errorf("More merchants than expected were parsed.")
+	}
+
+	if !reflect.DeepEqual(expectedMerchants, actualMerchants) {
+		t.Errorf("Retrieved Merchant differs from expected result.\n")
+		t.Errorf("Expected:\n%v+ \n", expectedMerchants)
+		t.Errorf("Received:\n%v+ \n", actualMerchants)
 	}
 }
 
