@@ -126,12 +126,12 @@ func (m Merchants) Swap(i, j int) {
 	m[i], m[j] = m[j], m[i]
 }
 
-// GetMerchants is used to retrieve Merchants from the Favor API.
-func (s Solid) GetMerchant(id string) (Merchant, error) {
+// GetMerchant is used to retrieve a single from the Favor API.
+func (c Client) GetMerchant(id string) (Merchant, error) {
 	emptyMerchant := Merchant{}
 	urlParams := map[string]string{}
-	url := s.BuildURL(fmt.Sprintf("merchant/%v", id), urlParams)
-	merchantData, err := s.makeAPIRequest("get", url)
+	url := c.BuildURL(fmt.Sprintf("merchant/%v", id), urlParams)
+	merchantData, err := c.makeAPIRequest("get", url)
 	if err != nil {
 		return emptyMerchant, err
 	}
@@ -147,14 +147,14 @@ func (s Solid) GetMerchant(id string) (Merchant, error) {
 }
 
 // GetMerchants is used to retrieve Merchants from the Favor API.
-func (s Solid) GetMerchants(lat, long float64) ([]Merchant, error) {
+func (c Client) GetMerchants(lat, long float64) ([]Merchant, error) {
 	urlParams := map[string]string{
 		"lat":             strconv.FormatFloat(lat, 'f', -1, 64),
 		"lng":             strconv.FormatFloat(long, 'f', -1, 64),
 		"location_source": "gps",
 	}
-	url := s.BuildURL("merchants", urlParams)
-	merchantData, err := s.makeAPIRequest("get", url)
+	url := c.BuildURL("merchants", urlParams)
+	merchantData, err := c.makeAPIRequest("get", url)
 	mr := struct {
 		Merchants Merchants `json:"merchants"`
 	}{}

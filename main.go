@@ -8,21 +8,21 @@ import (
 	"strings"
 )
 
-// Solid is our basic struct for making Favor API requests
-type Solid struct {
+// Client is our basic struct for making Favor API requests
+type Client struct {
 	Token  string
 	Client *http.Client
 	Secure bool
 }
 
 // New is a constructor function returning a new instance of Solid. Token is a mandatory argument.
-func New(token string) (*Solid, error) {
+func New(token string) (*Client, error) {
 	// As far as I can tell, in my limited research, the Favor token needs to be 32 digits long
 	if len(token) < 32 {
 		return nil, fmt.Errorf("The token provided is the incorrect length, a normal favorToken is 32 characters long.")
 	}
-	s := &Solid{Token: token, Secure: true}
-	return s, nil
+	c := &Client{Token: token, Secure: true}
+	return c, nil
 }
 
 // BuildURL constructs our Favor API URL when provided with an endpoint to hit and
@@ -32,9 +32,9 @@ func New(token string) (*Solid, error) {
 //
 // solid.BuildURL("hello", map[string]string{"lol": "yup"})
 //     =>  "https://api.askfavor.com/api/v5/hello?lol=yup"
-func (s Solid) BuildURL(endpoint string, params map[string]string) string {
+func (c Client) BuildURL(endpoint string, params map[string]string) string {
 	var baseURL string
-	if s.Secure {
+	if c.Secure { // Lord forgive me, for I have sinned.
 		baseURL = "https://api.askfavor.com/api/v5/"
 	} else {
 		baseURL = "http://api.askfavor.com/api/v5/"
@@ -54,16 +54,16 @@ func (s Solid) BuildURL(endpoint string, params map[string]string) string {
 }
 
 // Unexported function used to actually send requests off.
-func (s Solid) makeAPIRequest(method string, url string) ([]byte, error) {
+func (c Client) makeAPIRequest(method string, url string) ([]byte, error) {
 	req, err := http.NewRequest(strings.ToUpper(method), url, nil)
 	if err != nil {
 		err = fmt.Errorf("API request failed to build and returned this error:\n %v", err)
 		return nil, err
 	}
 
-	req.Header.Add("favorToken", s.Token)
+	req.Header.Add("favorToken", c.Token)
 
-	res, err := s.Client.Do(req)
+	res, err := c.Client.Do(req)
 	if err != nil {
 		err = fmt.Errorf("API request failed to complete and returned this error:\n %v", err)
 		return nil, err
