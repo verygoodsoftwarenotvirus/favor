@@ -1,8 +1,4 @@
-package solid
-
-import (
-// "fmt"
-)
+package favor
 
 // User represents a user of the service
 type User struct {

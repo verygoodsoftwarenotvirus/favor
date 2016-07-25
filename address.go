@@ -1,4 +1,4 @@
-package solid
+package favor
 
 import (
 // "fmt"
