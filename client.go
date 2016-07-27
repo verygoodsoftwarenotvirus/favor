@@ -15,7 +15,7 @@ type Client struct {
 	Secure bool
 }
 
-// New is a constructor function returning a new instance of Solid. Token is a mandatory argument.
+// New is a constructor function returning a new instance of a Favor Client.
 func New(token string) (*Client, error) {
 	// As far as I can tell, in my limited research, the Favor token needs to be 32 digits long
 	if len(token) < 32 {
@@ -27,10 +27,10 @@ func New(token string) (*Client, error) {
 
 // BuildURL constructs our Favor API URL when provided with an endpoint to hit and
 // any necessary query params. Example usages would be:
-// solid.BuildURL("hello", map[string]string{})
+// favor.BuildURL("hello", map[string]string{})
 //     =>  "https://api.askfavor.com/api/v5/hello"
 //
-// solid.BuildURL("hello", map[string]string{"lol": "yup"})
+// favor.BuildURL("hello", map[string]string{"lol": "yup"})
 //     =>  "https://api.askfavor.com/api/v5/hello?lol=yup"
 func (c Client) BuildURL(endpoint string, params map[string]string) string {
 	var baseURL string
@@ -54,8 +54,9 @@ func (c Client) BuildURL(endpoint string, params map[string]string) string {
 }
 
 // Unexported function used to actually send requests off.
-func (c Client) makeAPIRequest(method string, url string) ([]byte, error) {
-	req, err := http.NewRequest(strings.ToUpper(method), url, nil)
+func (c Client) makeAPIRequest(method, url, body string) ([]byte, error) {
+	b := strings.NewReader(body)
+	req, err := http.NewRequest(strings.ToUpper(method), url, b)
 	if err != nil {
 		err = fmt.Errorf("API request failed to build and returned this error:\n %v", err)
 		return nil, err
@@ -70,11 +71,11 @@ func (c Client) makeAPIRequest(method string, url string) ([]byte, error) {
 	}
 
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	responseBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		err = fmt.Errorf("API response failed to close and returned this error:\n %v", err)
 		return nil, err
 	}
 
-	return body, nil
+	return responseBody, nil
 }

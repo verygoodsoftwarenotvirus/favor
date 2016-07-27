@@ -1,5 +1,13 @@
 package favor
 
+import (
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"reflect"
+	"strings"
+)
+
 // ServerFavorResponse is a simple container struct for the server's
 // response to a favor request
 type ServerFavorResponse struct {
@@ -27,6 +35,25 @@ type Receipt struct {
 	RebatePrice    string `json:"rebate_price"`
 }
 
+// RequestFavor represents what we need to send to the Favor server to place a Favor
+type RequestFavor struct {
+	Title            string  `json:"title"`
+	Wants            string  `json:"wants"`
+	Lat              float64 `json:"lat"`
+	Lng              float64 `json:"lng"`
+	Street           string  `json:"street"`
+	Zipcode          string  `json:"zipcode"`
+	MarketID         int     `json:"market_id"`
+	PrimetimeAck     int     `json:"primetime_ack"`
+	Apt              string  `json:"apt,omitempty"`
+	Notes            string  `json:"notes"`
+	MerchantID       int     `json:"merchant_id"`
+	MealID           int     `json:"meal_id,omitempty"`
+	OriginMealID     int     `json:"origin_meal_id,omitempty"`
+	OriginCategoryID int     `json:"origin_category_id,omitempty"`
+	OriginOrderType  int     `json:"origin_order_type,omitempty"`
+}
+
 // Favor represents our requested task to the service
 type Favor struct {
 	ID              string   `json:"id"`
@@ -45,4 +72,80 @@ type Favor struct {
 	// Unsure of what AssignStatus is, as none of my intercepted
 	// requests seemed to have it populated.
 	// AssignStatus    interface{}  `json:"assign_status"`
+}
+
+// GetFavor is used to retrieve a single favor from the Favor API.
+func (c Client) GetFavor(id string) (Favor, error) {
+	urlParams := map[string]string{}
+	url := c.BuildURL(fmt.Sprintf("favors/%v", id), urlParams)
+	favorData, err := c.makeAPIRequest("get", url, "")
+	if err != nil {
+		return Favor{}, err
+	}
+	f := struct {
+		Favor Favor `json:"favor"`
+	}{}
+
+	err = json.Unmarshal(favorData, &f)
+	if err != nil {
+		return Favor{}, err
+	}
+	return f.Favor, nil
+}
+
+// GetFavors is used to retrieve a list of favors from the Favor API.
+func (c Client) GetFavors() ([]Favor, error) {
+	// knownParams := []string{"count", "include_cancelled", "location_source"}
+	url := c.BuildURL("favors/", map[string]string{})
+	favorData, err := c.makeAPIRequest("get", url, "")
+	if err != nil {
+		return []Favor{}, err
+	}
+	f := struct {
+		Count  int     `json:"count"`
+		Favors []Favor `json:"favors"`
+	}{}
+
+	err = json.Unmarshal(favorData, &f)
+	if err != nil {
+		return []Favor{}, err
+	}
+	return f.Favors, nil
+}
+
+// CreateFormString turns a RequestFavor struct into an appropriate POST form payload
+func (rf RequestFavor) CreateFormString() (string, error) {
+	t := reflect.TypeOf(rf)
+	v := reflect.ValueOf(rf)
+	u := url.Values{}
+
+	for i := 0; i < v.NumField(); i++ {
+		field := strings.Split(t.Field(i).Tag.Get("json"), ",")[0]
+		value := fmt.Sprint(v.Field(i).Interface())
+		u.Add(field, value)
+	}
+
+	return u.Encode(), nil
+}
+
+// PlaceFavor places a Favor order with the Favor API
+func (c Client) PlaceFavor(rf RequestFavor) (Favor, error) {
+	requestBody, err := rf.CreateFormString()
+	if err != nil {
+		return Favor{}, err
+	}
+	url := c.BuildURL("favors/", map[string]string{})
+	responseData, err := c.makeAPIRequest("post", url, requestBody)
+	if err != nil {
+		return Favor{}, err
+	}
+	f := struct {
+		Favor Favor `json:"favor"`
+	}{}
+
+	err = json.Unmarshal(responseData, &f)
+	if err != nil {
+		return Favor{}, err
+	}
+	return f.Favor, nil
 }

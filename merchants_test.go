@@ -84,8 +84,8 @@ func TestGetMerchant(t *testing.T) {
 		State:           "NSW",
 		Zipcode:         "2000",
 		HasExpandedMenu: "1",
-		Latitude:        "-33.865143",
-		Longitude:       "151.209900",
+		Lat:             "-33.865143",
+		Lng:             "151.209900",
 		IsCarOnly:       "0",
 	}
 
@@ -145,8 +145,8 @@ func TestGetMerchants(t *testing.T) {
 			State:           "NSW",
 			Zipcode:         "2000",
 			HasExpandedMenu: "1",
-			Latitude:        "-33.865143",
-			Longitude:       "151.209900",
+			Lat:             "-33.865143",
+			Lng:             "151.209900",
 			IsCarOnly:       "0",
 		},
 	}

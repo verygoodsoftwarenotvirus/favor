@@ -105,8 +105,8 @@ type Merchant struct {
 	Distance        float64         `json:"distance,omitempty"`
 	HasExpandedMenu string          `json:"has_expanded_menu,omitempty"`
 	Hours           []MerchantHours `json:"hours,omitempty"`
-	Latitude        string          `json:"lat,omitempty"`
-	Longitude       string          `json:"lng,omitempty"`
+	Lat             string          `json:"lat,omitempty"`
+	Lng             string          `json:"lng,omitempty"`
 	IsCarOnly       string          `json:"is_car_only,omitempty"`
 }
 
@@ -126,14 +126,13 @@ func (m Merchants) Swap(i, j int) {
 	m[i], m[j] = m[j], m[i]
 }
 
-// GetMerchant is used to retrieve a single from the Favor API.
+// GetMerchant is used to retrieve a single merchant from the Favor API.
 func (c Client) GetMerchant(id string) (Merchant, error) {
-	emptyMerchant := Merchant{}
 	urlParams := map[string]string{}
 	url := c.BuildURL(fmt.Sprintf("merchant/%v", id), urlParams)
-	merchantData, err := c.makeAPIRequest("get", url)
+	merchantData, err := c.makeAPIRequest("get", url, "")
 	if err != nil {
-		return emptyMerchant, err
+		return Merchant{}, err
 	}
 	mr := struct {
 		Merchant Merchant `json:"merchant"`
@@ -141,7 +140,7 @@ func (c Client) GetMerchant(id string) (Merchant, error) {
 
 	err = json.Unmarshal(merchantData, &mr)
 	if err != nil {
-		return emptyMerchant, err
+		return Merchant{}, err
 	}
 	return mr.Merchant, nil
 }
@@ -154,7 +153,7 @@ func (c Client) GetMerchants(lat, long float64) ([]Merchant, error) {
 		"location_source": "gps",
 	}
 	url := c.BuildURL("merchants", urlParams)
-	merchantData, err := c.makeAPIRequest("get", url)
+	merchantData, err := c.makeAPIRequest("get", url, "")
 	mr := struct {
 		Merchants Merchants `json:"merchants"`
 	}{}
