@@ -129,8 +129,8 @@ func (m Merchants) Swap(i, j int) {
 // GetMerchant is used to retrieve a single merchant from the Favor API.
 func (c Client) GetMerchant(id string) (Merchant, error) {
 	urlParams := map[string]string{}
-	url := c.BuildURL(fmt.Sprintf("merchant/%v", id), urlParams)
-	merchantData, err := c.makeAPIRequest("get", url, "")
+	uri := c.BuildURL(fmt.Sprintf("merchant/%v", id), urlParams)
+	merchantData, err := c.makeAPIRequest("get", uri)
 	if err != nil {
 		return Merchant{}, err
 	}
@@ -152,8 +152,8 @@ func (c Client) GetMerchants(lat, long float64) ([]Merchant, error) {
 		"lng":             strconv.FormatFloat(long, 'f', -1, 64),
 		"location_source": "gps",
 	}
-	url := c.BuildURL("merchants", urlParams)
-	merchantData, err := c.makeAPIRequest("get", url, "")
+	uri := c.BuildURL("merchants", urlParams)
+	merchantData, err := c.makeAPIRequest("get", uri)
 	mr := struct {
 		Merchants Merchants `json:"merchants"`
 	}{}

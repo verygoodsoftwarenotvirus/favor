@@ -2,6 +2,7 @@ package favor
 
 import (
 	"github.com/stretchr/testify/assert"
+	"net/url"
 	"testing"
 )
 
@@ -19,10 +20,7 @@ func TestCreateFormString(t *testing.T) {
 		Notes:        "In west Philadelphia, born and raised.",
 		MerchantID:   12345,
 	}
-	expected := "apt=123&lat=-33.865143&lng=151.2099&market_id=0&meal_id=0&merchant_id=12345&notes=In+west+Philadelphia%2C+born+and+raised.&origin_category_id=0&origin_meal_id=0&origin_order_type=0&primetime_ack=0&street=42+Wallaby+Way&title=Salty+Greg%27s+Frog+House&wants=One+order+of+frog%27s+legs%2C+please.&zipcode=2000"
-	actual, err := x.CreateFormString()
-	if err != nil {
-		t.Errorf("Constructor allowed new Favor to be built with faulty token")
-	}
+	expected := url.Values{"market_id": []string{"0"}, "title": []string{"Salty Greg's Frog House"}, "wants": []string{"One order of frog's legs, please."}, "zipcode": []string{"2000"}, "origin_category_id": []string{"0"}, "origin_order_type": []string{"0"}, "lat": []string{"-33.865143"}, "apt": []string{"123"}, "notes": []string{"In west Philadelphia, born and raised."}, "street": []string{"42 Wallaby Way"}, "merchant_id": []string{"12345"}, "origin_meal_id": []string{"0"}, "lng": []string{"151.2099"}, "primetime_ack": []string{"0"}, "meal_id": []string{"0"}}
+	actual := x.CreateFormString()
 	assert.Equal(t, expected, actual)
 }

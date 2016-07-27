@@ -77,8 +77,8 @@ type Favor struct {
 // GetFavor is used to retrieve a single favor from the Favor API.
 func (c Client) GetFavor(id string) (Favor, error) {
 	urlParams := map[string]string{}
-	url := c.BuildURL(fmt.Sprintf("favors/%v", id), urlParams)
-	favorData, err := c.makeAPIRequest("get", url, "")
+	uri := c.BuildURL(fmt.Sprintf("favors/%v", id), urlParams)
+	favorData, err := c.makeAPIRequest("get", uri)
 	if err != nil {
 		return Favor{}, err
 	}
@@ -96,8 +96,8 @@ func (c Client) GetFavor(id string) (Favor, error) {
 // GetFavors is used to retrieve a list of favors from the Favor API.
 func (c Client) GetFavors() ([]Favor, error) {
 	// knownParams := []string{"count", "include_cancelled", "location_source"}
-	url := c.BuildURL("favors/", map[string]string{})
-	favorData, err := c.makeAPIRequest("get", url, "")
+	uri := c.BuildURL("favors/", map[string]string{})
+	favorData, err := c.makeAPIRequest("get", uri)
 	if err != nil {
 		return []Favor{}, err
 	}
@@ -114,7 +114,7 @@ func (c Client) GetFavors() ([]Favor, error) {
 }
 
 // CreateFormString turns a RequestFavor struct into an appropriate POST form payload
-func (rf RequestFavor) CreateFormString() (string, error) {
+func (rf RequestFavor) CreateFormString() url.Values {
 	t := reflect.TypeOf(rf)
 	v := reflect.ValueOf(rf)
 	u := url.Values{}
@@ -125,17 +125,14 @@ func (rf RequestFavor) CreateFormString() (string, error) {
 		u.Add(field, value)
 	}
 
-	return u.Encode(), nil
+	return u
 }
 
 // PlaceFavor places a Favor order with the Favor API
 func (c Client) PlaceFavor(rf RequestFavor) (Favor, error) {
-	requestBody, err := rf.CreateFormString()
-	if err != nil {
-		return Favor{}, err
-	}
-	url := c.BuildURL("favors/", map[string]string{})
-	responseData, err := c.makeAPIRequest("post", url, requestBody)
+	requestBody := rf.CreateFormString()
+	uri := c.BuildURL("favors/", map[string]string{})
+	responseData, err := c.makeAPIRequestWithBody("post", uri, requestBody)
 	if err != nil {
 		return Favor{}, err
 	}

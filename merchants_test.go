@@ -1,45 +1,10 @@
 package favor
 
 import (
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-
-	"net/url"
-
 	"reflect"
 	"testing"
 	"time"
 )
-
-func setupMockClient(response string) (*httptest.Server, *http.Client) {
-	/*
-		Originally I wanted to just have the API make requests to the HTTPS endpoints
-		that Favor sets up. Unfortunately, I couldn't get httptest.NewTLSServer working
-		so I had to make security a boolean value, which is sad, and makes me sad.
-
-		If somebody can/wants to issue a PR fixing this, you will have my eternal gratitude.
-
-		This code is lovingly borrowed from http://keighl.com/post/mocking-http-responses-in-golang/
-	*/
-
-	// Test server that always responds with 200 code, and specific payload
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintln(w, response)
-	}))
-
-	// Make a transport that reroutes all traffic to the example server
-	transport := &http.Transport{
-		Proxy: func(req *http.Request) (*url.URL, error) {
-			return url.Parse(server.URL)
-		},
-	}
-	// Make a http.Client with the transport
-	httpClient := &http.Client{Transport: transport}
-	return server, httpClient
-}
 
 func TestGetMerchant(t *testing.T) {
 	s, err := New(dummyToken)
